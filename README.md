@@ -41,11 +41,11 @@ maven 3.x+
 ## 引入
 
 ```xml
-<plugin>
+<dependency>
     <groupId>com.github.houbb</groupId>
     <artifactId>checksum</artifactId>
     <version>0.0.1</version>
-</plugin>
+</dependency>
 ```
 
 ## 定义待加签的示例对象
