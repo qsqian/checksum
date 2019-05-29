@@ -1,31 +1,34 @@
-# sisyphus 
+# checksum
 
-用来自动生成 java maven 项目的一些注释。
+基于 java 注解生成加签验签 checksum。
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.houbb/checksum/badge.svg)](http://mvnrepository.com/artifact/com.github.houbb/checksum)
+[![Build Status](https://www.travis-ci.org/houbb/checksum.svg?branch=master)](https://www.travis-ci.org/houbb/checksum?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/houbb/checksum/badge.svg?branch=master)](https://coveralls.io/github/houbb/checksum?branch=master)
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.houbb/sisyphus/badge.svg)](http://mvnrepository.com/artifact/com.github.houbb/sisyphus)
-[![Build Status](https://www.travis-ci.org/houbb/sisyphus.svg?branch=master)](https://www.travis-ci.org/houbb/sisyphus?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/houbb/sisyphus/badge.svg?branch=master)](https://coveralls.io/github/houbb/sisyphus?branch=master)
+## 创作缘由
+
+原来的代码中，checksum 的生成是用的工具类方法。
+
+后来发现如下的问题：
+
+1. 有些字段太大，不想参与验签，但是无法方便的调整。
+
+2. 不同系统的 checksum 字段不同，只好把工具方法 copy 过去，改来改去。
+
+感觉这样有很大的弊端，完全失去了灵活性。
 
 ## 特性
 
-- 基于注解的重试策略
+- 基于注解的 checksum 加签验签
 
-- 整合 spring
+- Fluent 流式语法
 
-- 支持过程式编程
+- 支持灵活的策略自定义以及默认指定
 
 ## 更新记录
 
 > [更新记录](doc/CHANGE_LOG.md)
-
-## 注意：
-
-1. 只对没有任何注释的类/方法/字段进行翻译注释。
-
-2. 使用前最好使用 VCS 保证代码已经提交，因为注释会**直接修改源文件**。生成后可以浏览下生成的是否满意，再进行提交。
-
-3. 本翻译暂时依赖 google，需要联网。(如果不联网则不对单词进行翻译，而是简单的分词。强烈建议联网) 
 
 # 快速开始
 
@@ -34,153 +37,111 @@
 ```xml
 <plugin>
     <groupId>com.github.houbb</groupId>
-    <artifactId>sisyphus</artifactId>
+    <artifactId>checksum</artifactId>
     <version>0.0.1</version>
 </plugin>
 ```
 
-## 运行
+## 定义待加签的示例对象
 
-```
-mvn com.github.houbb:sisyphus:0.0.1:gen-comment
-```
-
-## 属性
-
-| 属性 | 说明 | 默认值 | 类型 | 备注 |
-|:----|:----|:----|:----|:----|
-| isCommentWhenNetworkBroken | 如果 断网，是否进行注释 | false | 字符串| 默认不进行翻译 |
-| encoding | 项目编码 | utf-8 | 字符串|  |
-| includes | 包含文件正则 | `**\/*.java` | 字符串| 默认为所有 java 文件 |
-| excludes | 排除文件正则 | | 字符串| 默认不进行排除 |
-
-## 效果
-
-- 原始文件如下
+- User.java
 
 ```java
-public abstract class AbstractExecuteService implements ExecuteService {
+public class User {
 
-    private static final Log log = LogFactory.getLog(AbstractExecuteService.class);
+    @CheckField
+    private String name;
 
-    protected MavenProject project;
+    @CheckField
+    private String password;
 
-    protected String encoding;
+    private String address;
 
-    public AbstractExecuteService(MavenProject mavenProject, String encoding) {
-        this.project = mavenProject;
-        this.encoding = encoding;
-    }
+    @Checksum
+    private String checksum;
 
-    protected void initConfig() throws Exception{}
-
-    private String returnTest(final String arg) throws Exception{
-        return "";
-    }
-
-    public void hwTest() {
-
-    }
+    //Getter & Setter
+    //toString()
 }
 ```
 
-- 运行后文件内容
+`@CheckField` 表示参与加签的字段信息
+
+`@Checksum` 表示加签结果存放的字段
+
+## 调用测试
 
 ```java
+package com.github.houbb.checksum.core;
+
+import com.github.houbb.checksum.model.User;
+import org.junit.Assert;
+import org.junit.Test;
+
 /**
- *  抽象执行服务
+ * @author binbin.hou
+ * @since 0.0.1
  */
-public abstract class AbstractExecuteService implements ExecuteService {
+public class ChecksumBsTest {
 
-    /**    
-     * 日志    
-     */    
-    private static final Log log = LogFactory.getLog(AbstractExecuteService.class);
+    @Test
+    public void checksumTest() {
+        User user = buildUser();
+        final String checksum = ChecksumBs
+                .newInstance(user)
+                .checksum();
 
-    /**    
-     * 项目    
-     */    
-    protected MavenProject project;
-
-    /**    
-     * 编码    
-     */    
-    protected String encoding;
-
-    /**    
-     *  抽象执行服务    
-     *    
-     * @param mavenProject maven项目    
-     * @param encoding 编码    
-     */    
-    public AbstractExecuteService(MavenProject mavenProject, String encoding) {
-        this.project = mavenProject;
-        this.encoding = encoding;
+        Assert.assertEquals("8D62F2BC49A9AB51280C8F42A483ED54", checksum);
     }
 
-    /**    
-     * 初始化配置    
-     *    
-     * @throws java.lang.Exception if any    
-     */    
-    protected void initConfig() throws Exception{}
+    @Test
+    public void fillTest() {
+        User user = buildUser();
+        ChecksumBs.newInstance(user).fill();
 
-    /**    
-     * 返回测试    
-     *    
-     * @param arg 论据    
-     * @return java.lang.String    
-     * @throws java.lang.Exception if any    
-     */    
-    private String returnTest(final String arg) throws Exception{
-        return "";
+        Assert.assertEquals("User{name='ryo', password='1234', address='china', checksum='8D62F2BC49A9AB51280C8F42A483ED54'}",
+                user.toString());
     }
 
-    /**    
-     * 你好世界测试    
-     */    
-    public void hwTest() {
-
+    /**
+     * 构建示例对象
+     * @return 构建示例对象
+     */
+    private User buildUser() {
+        User user = new User();
+        user.name("ryo")
+                .password("1234")
+                .address("china");
+        return user;
     }
+
 }
 ```
+
+# ChecksumBs 引导类
+
+用来创建加签的相关配置及实现。
+
+## 配置核心方法
+
+| 方法 | 默认值 | 备注 |
+|:--|:--|:--|
+| newInstance() |  | 新建 ChecksumBs 实例(static) |
+| newInstance(object) |  | 新建 ChecksumBs 实例，并且指定待加签的对象(static，建议使用) |
+| target(Object) |  | 指定待加签的对象 |
+| secret(ISecret) | DefaultMd5Secret | 指定加密的策略，默认使用 md5 加密 |
+| sort(ISort) |  NameAscSort | 指定排序的策略，默认根据字段的名称正序排列表 |
+| cache(ICache) |  DefaultFieldListCache | 指定字段的缓存策略，默认使用本地 map 进行字段信息缓存 |
+
+## 调用核心方法
+
+| 方法 | 返回值 | 备注 |
+|:--|:--|:--|
+| checksum() | String | 返回加签的结果 |
+| fill() |  无 | 将上面 checksum 的结果设置到 @Checksum 标识的字段中 |
 
 ## 自定义
 
-- 更多的可配置属性会根据后期使用添加
+上述 ISecret/ISort/ICache 都是支持自定义的。
 
-- 缩写的自定义配置
-
-在不同的项目中，缩写的风格各异。但是翻译需要完整的单词，需要给缩写提供对应的**完整拼写**。
-
-在项目的 **resources** 目录下， 新建文件：`genComment.properties`
-
-比如内容可定义为：
-
-标识本项目中 hw 代表的时 `hello world`
-
-```
-hw=hello world
-```
-
-- 缩写的默认配置
-
-自定义配置优先级高于默认配置。默认配置较少，只列举了一些常见的缩写：
-
-```
-"impl", "implements"
-"msg", "message"
-"err", "error"
-"e", "exception"
-"ex", "exception"
-"doc", "document"
-"val", "value"
-"num", "number"
-"vo", "value object"
-"dto", "data transfer object"
-"gen", "generate"
-"dir", "directory"
-"init", "initialize"
-"cfg", "config"
-"arg", "argument"
-```
+一般只需要重新定义 ISecret 即可。
