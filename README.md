@@ -24,13 +24,19 @@
 
 - Fluent 流式语法
 
-- 支持灵活的策略自定义以及默认指定
+- 支持灵活的策略自定义
 
 ## 更新记录
 
 > [更新记录](doc/CHANGE_LOG.md)
 
 # 快速开始
+
+## 环境要求
+
+jdk7+
+
+maven 3.x+
 
 ## 引入
 
@@ -64,6 +70,8 @@ public class User {
     //toString()
 }
 ```
+
+### 核心注解
 
 `@CheckField` 表示参与加签的字段信息
 
